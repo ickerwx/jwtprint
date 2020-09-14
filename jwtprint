@@ -1,0 +1,43 @@
+#!/usr/bin/env python
+
+import base64
+import json
+import sys
+
+
+def b64url(text):
+    missing_chars = len(text) % 4
+    if missing_chars != 0:
+        text += b'=' * (4 - missing_chars)
+    text = text.replace(b'_', b'/')
+    text = text.replace(b'-', b'+')
+    return text
+
+
+def main():
+
+    if len(sys.argv) != 2:
+        print(f"Usage: {sys.argv[0]} <token>")
+        sys.exit(-1)
+    token = bytes(sys.argv[1], 'ascii')
+    head_b64, rest = token.split(b'.', 1)
+
+    header = json.loads(base64.b64decode(b64url(head_b64)))
+    print('-' * 20)
+    for k in header.keys():
+        print(f'{k}: {header[k]}')
+    print('-' * 20)
+    if 'enc' in header.keys():
+        print(f'Encrypted part: {rest.decode()}')
+    else:
+        payload, sig = rest.split(b'.')
+        payload = b64url(payload)
+        sig = b64url(sig)
+        payload = json.loads(base64.b64decode(payload))
+        for k in payload.keys():
+            print(f'{k}: {payload[k]}')
+        print(f"signature: {sig.decode()}")
+
+
+if __name__ == "__main__":
+    main()
